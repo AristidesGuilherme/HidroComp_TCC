@@ -1,3 +1,6 @@
+import sys
+sys.path.insert(0, r'C:\Users\arist\OneDrive\Documentos\UFAL\PIBIC 24-25\lib_clebson') 
+
 import numpy
 
 import HydroComp.statistic.exceptions as e
@@ -7,7 +10,6 @@ from lmoments3.distr import gev
 from HydroComp.graphics.genextreme import GenExtreme
 
 class Gev(StatsBuild):
-
     name = 'GEV'
     estimador = None
     dist = genextreme
