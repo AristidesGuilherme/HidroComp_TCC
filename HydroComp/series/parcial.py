@@ -491,6 +491,8 @@ class Parcial(object):
 
     def plot_distribution(self, title, type_function, save=False):
         try:
+            #add mvs
+            self.mvs()
             genpareto = GenPareto(title, self.fit[0], self.fit[1], self.fit[2])
             data, fig = genpareto.plot(type_function)
             if save:

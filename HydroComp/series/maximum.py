@@ -34,7 +34,7 @@ class Maximum(object):
     def mvs(self):
         try:
             peaks = self.peaks.copy()
-            self.fit = stat.genextreme.fit(peaks['peaks'].values)
+            self.fit = stat.genextreme.fit(peaks['peaks'].values, method="MLE")
             return self.fit
         except AttributeError:
             self.annual()
