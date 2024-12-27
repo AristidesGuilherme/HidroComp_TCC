@@ -2,6 +2,8 @@ import pandas as pd
 import math
 import scipy.stats as stat
 import plotly as py
+from lmoments3 import distr
+
 
 from HydroComp.graphics.genpareto import GenPareto
 from HydroComp.graphics.hydrogram_parcial import HydrogramParcial
@@ -419,7 +421,22 @@ class Parcial(object):
             self.fit = stat.genpareto.fit(self.peaks['peaks'].values)
 
         return self.fit
+    
+    #add function mml fitting
+    def mml(self):
+        try:
+            peaks = self.peaks.copy()
+            #object fitting 
+            fit = distr.gpa.lmom_fit(peaks['peaks'].values)
+            self.fit = [param[1] for param in fit.items()]
+            return self.fit
+        except TypeError:
+            self.event_peaks()
+            fit = distr.gpa.lmom_fit(peaks['peaks'].values)
+            self.fit = [param[1] for param in fit.items()]
 
+        return self.fit
+    
     def resample(self, quantity):
         try:
             n = len(self.peaks)
@@ -489,10 +506,13 @@ class Parcial(object):
         magn_resample = magn.T
         return magn_resample
 
-    def plot_distribution(self, title, type_function, save=False):
+    def plot_distribution(self, title, type_function, estimador, save=False):
         try:
-            #add mvs
-            self.mvs()
+            if estimador == 'mvs':
+                self.mvs()
+            elif estimador == 'mml':
+                self.mml()
+
             genpareto = GenPareto(title, self.fit[0], self.fit[1], self.fit[2])
             data, fig = genpareto.plot(type_function)
             if save:
@@ -500,7 +520,10 @@ class Parcial(object):
                 py.image.save_as(fig, filename='gráficos/'+'%s.png' % aux_name)
             return data, fig
         except AttributeError:
-            self.mvs()
+            if estimador == 'mvs':
+                self.mvs()
+            elif estimador == 'mml':
+                self.mml()
             return self.plot_distribution(title, type_function)
 
     def plot_hydrogram(self, title, save=False):
