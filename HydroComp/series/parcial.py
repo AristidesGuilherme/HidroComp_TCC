@@ -3,16 +3,31 @@ import math
 import scipy.stats as stat
 import plotly as py
 from lmoments3 import distr
-
+import numpy as np
 
 from HydroComp.graphics.genpareto import GenPareto
+from HydroComp.graphics.genextreme import GenExtreme
+from HydroComp.graphics.pearson_3 import Pearson3
+
 from HydroComp.graphics.hydrogram_parcial import HydrogramParcial
 from HydroComp.graphics.boxplot import Boxplot
 
 
 class Parcial(object):
 
-    distribution = 'GP'
+    '''
+        Adding analyze options against distribution and variable
+
+        distribuiton: 
+            GP (Generalized Pareto) or Gev (Generalized Extreme) or P3 (Pearson III)
+
+        variable:
+            'peaks': magnitude event 
+            'Duration': duration event
+            'period_ocorr': period ocorrence event 
+    
+            '''
+
     __percentil = 0.8
     dic_name = {'stationary': 'Percentil', 'events_by_year': 'Eventos por Ano',
                 'autocorrelation': 'Autocorrelação'}
@@ -413,9 +428,16 @@ class Parcial(object):
         data = {'Date': list(), 'peaks': list()}
         return data, max_events
 
-    def mvs(self):
+    def mvs(self, distribuition, variable):
         try:
-            self.fit = stat.genpareto.fit(self.peaks['peaks'].values)
+            if distribuition == 'GP':
+                self.fit = stat.genpareto.fit(self.peaks[variable].values)
+            elif distribuition == 'Gev':
+                self.fit = stat.genextreme.fit(self.peaks[variable].values)
+            elif distribuition == 'P3':
+                self.fit = stat.pearson3.fit(self.peaks[variable].values)
+            
+
         except TypeError:
             self.event_peaks()
             self.fit = stat.genpareto.fit(self.peaks['peaks'].values)
@@ -423,16 +445,26 @@ class Parcial(object):
         return self.fit
     
     #add function mml fitting
-    def mml(self):
+    def mml(self, distribuition, variable):
         try:
-            peaks = self.peaks.copy()
-            #object fitting 
-            fit = distr.gpa.lmom_fit(peaks['peaks'].values)
-            self.fit = [param[1] for param in fit.items()]
+            df = self.peaks.copy()
+            if distribuition == 'GP':
+                fit = distr.gpa.lmom_fit(df[variable].values)
+                self.fit = [param[1] for param in fit.items()]
+
+            elif distribuition == 'Gev':
+                fit = distr.gev.lmom_fit(df[variable].values)
+                self.fit = [param[1] for param in fit.items()]
+            
+            elif distribuition == 'P3':
+                fit = distr.pe3.lmom_fit(df[variable].values)
+                self.fit = [param[1] for param in fit.items()]
+
             return self.fit
+        
         except TypeError:
             self.event_peaks()
-            fit = distr.gpa.lmom_fit(peaks['peaks'].values)
+            fit = distr.gpa.lmom_fit(df[variable].values)
             self.fit = [param[1] for param in fit.items()]
 
         return self.fit
@@ -506,24 +538,48 @@ class Parcial(object):
         magn_resample = magn.T
         return magn_resample
 
-    def plot_distribution(self, title, type_function, estimador, save=False):
+    def plot_distribution(self, title, type_function, estimador, distribuition, variable, save=False):
         try:
             if estimador == 'mvs':
-                self.mvs()
-            elif estimador == 'mml':
-                self.mml()
+                self.mvs(distribuition, variable)
+                if distribuition == 'Gev':
+                    gengev = GenExtreme(title, self.fit[0], self.fit[1], self.fit[2])
+                    data, fig = gengev.plot(type_function)
 
-            genpareto = GenPareto(title, self.fit[0], self.fit[1], self.fit[2])
-            data, fig = genpareto.plot(type_function)
+                elif distribuition == 'GP':
+                    genpareto = GenPareto(title, self.fit[0], self.fit[1], self.fit[2])
+                    data, fig = genpareto.plot(type_function)
+                
+                elif distribuition == 'P3':
+                    pearson = Pearson3(title, self.fit[0], self.fit[1], self.fit[2])
+                    data, fig = pearson.plot(type_function)
+
+            else:
+                if estimador == 'mml':
+                    self.mml(distribuition, variable)
+
+                    if distribuition == 'Gev':
+                        gengev = GenExtreme(title, self.fit[0], self.fit[1], self.fit[2])
+                        data, fig = gengev.plot(type_function)
+
+                    elif distribuition == 'GP':
+                        genpareto = GenPareto(title, self.fit[0], self.fit[1], self.fit[2])
+                        data, fig = genpareto.plot(type_function)
+                    
+                    elif distribuition == 'P3':
+                        pearson = Pearson3(title, self.fit[0], self.fit[1], self.fit[2])
+                        data, fig = pearson.plot(type_function)
+
             if save:
                 aux_name = title.replace(' ', '_')
                 py.image.save_as(fig, filename='gráficos/'+'%s.png' % aux_name)
             return data, fig
         except AttributeError:
+
             if estimador == 'mvs':
-                self.mvs()
+                self.mvs(distribuition, variable)
             elif estimador == 'mml':
-                self.mml()
+                self.mml(distribuition, variable)
             return self.plot_distribution(title, type_function)
 
     def plot_hydrogram(self, title, save=False):
@@ -545,3 +601,29 @@ class Parcial(object):
             py.image.save_as(fig, filename='gráficos/boxplot_%s.png' % name)
 
         return fig, data
+    
+    def radians(self, position='peak', scale='year'):
+        '''
+            scale: week, month or year
+        '''
+        df = self.peaks.copy()
+        df['date_peak'] = df.index
+
+        if position =='peak':
+            date = df['date_peak']
+            if scale == 'year':
+
+                radians_date = date.dt.dayofyear * 2 * np.pi / 365
+
+        #Created new dataframe for saving data
+        df_new = pd.DataFrame()
+        df_new['date_peak'], df_new['radians_peak'] = df['date_peak'], radians_date
+        df_new['Duration'], df_new['peaks'] = df['Duration'], df['peaks']
+
+        df_new
+
+
+
+        return df_new
+
+

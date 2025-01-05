@@ -13,7 +13,7 @@ class GenPareto(DistributionBiuld):
 
     def cumulative(self):
         datas = self._data('cumulative')
-        data = [go.Scatter(x=datas['peaks'], y=datas['Cumulative'],
+        data = [go.Scatter(x=datas['variable'], y=datas['Cumulative'],
                            name=self.title, line=dict(color='rgb(128, 128, 128)',
                                                       width=2))]
 
@@ -34,7 +34,7 @@ class GenPareto(DistributionBiuld):
 
     def density(self):
         datas = self._data('density')
-        data = [go.Scatter(x=datas['peaks'], y=datas['Density'],
+        data = [go.Scatter(x=datas['variable'], y=datas['Density'],
                            name=self.title, line=dict(color='rgb(128, 128, 128)',
                                                       width=2))]
 
@@ -55,10 +55,10 @@ class GenPareto(DistributionBiuld):
     def _data_density(self):
 
         cumulative = self._data_cumulative()
-        density = stat.genpareto.pdf(cumulative['peaks'].values, self.shape,
+        density = stat.genpareto.pdf(cumulative['variable'].values, self.shape,
                                      loc=self.location, scale=self.scale)
 
-        dic = {'peaks': cumulative['peaks'].values, 'Density': density}
+        dic = {'variable': cumulative['variable'].values, 'Density': density}
 
         return pd.DataFrame(dic)
 
@@ -71,6 +71,6 @@ class GenPareto(DistributionBiuld):
                                        loc=self.location,
                                        scale=self.scale)
 
-        dic = {'peaks': quantiles, 'Cumulative': probability}
+        dic = {'variable': quantiles, 'Cumulative': probability}
 
         return pd.DataFrame(dic)
