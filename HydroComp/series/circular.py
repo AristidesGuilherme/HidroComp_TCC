@@ -14,7 +14,7 @@ class Circular(object):
     def day_hydrologic(self, date_input, month_num_start_year_hydrologic):
 
         ''' With a peak flood date, it calculates how many days occurred 
-            between the beginning of the hydrological year and the chosen date
+            between the start of the hydrological year and the chosen date
             
             date_input: Ex: '1996-01-17'
             month_num_start_year_hydrologic: Ex: January is 1, February is 2 ... December is 12
@@ -99,102 +99,150 @@ class Circular(object):
             date_circular = 360 * (day_hidrology / days_year_hydrologic)
 
         return date_circular
-
-
-
-
-
-    '''def radians_date(self, type_date='peak', scale='year'):
-       
-
-        df = self.df_parcial.copy()
-        df['date_peak'] = df.index
-        
-        #Defining dict with parameters for calculus radians 
-        dic_type_date = {'peak':'date_peak', 'Start':'Start', 'End':'End'}
-        dict_scale = {'week':7, 'month':31, 'year':365}
-
-        #Get parameters
-        col_name = dic_type_date[type_date]
-        factor_scale = dict_scale[scale]
-        
-        #Calculeted date radians
-        radians_date = df[col_name].dt.dayofweek * 2 * np.pi / factor_scale
-
-
-        #Created new dataframe for saving data
-        df_new = pd.DataFrame()
-        df_new[col_name], df_new['radians_date'] = df[col_name], radians_date
-        df_new['Duration'], df_new['peaks'] = df['Duration'], df['peaks']
-
-        #Ajust columns and index dataframe
-        df_new.reset_index(inplace=True)
-        df_new.drop(['index'], axis=1, inplace=True)
-
-        return df_new'''
     
     
-    def plot_radians_date(self, type_date='peak', scale='year'):
-        #Defining dict with parameters for calculus radians 
-        dic_type_date = {'peak':'date_peak', 'Start':'Start', 'End':'End'}
-        dict_scale = {'week':7, 'month':31, 'year':365}
+    def plot_bar_circular(self, month_num_start_year_hydrologic, unit='rad'):
 
-        #Get parameters
-        col_name = dic_type_date[type_date]
-        factor_scale = dict_scale[scale]
+        #Generating copy of daframe SDP
+        df_circular_date = self.df_parcial.copy()
 
-        #Calculated radians date
-        df_radians_date = self.radians_date(type_date, scale)
+        #Add col with dates peaks floods
+        df_circular_date['date_peaks'] = df_circular_date.index
 
-        if scale == 'month':
-            #Armazenando frequência de ocorrência  de cada dia dentro do mês
-            list_freq = []
-            for radians in df_radians_date['radians_date']:
-                freq = 1
-                for radians_compare in df_radians_date['radians_date']:
-                    if radians == radians_compare:
-                        freq += 1
-                list_freq.append(freq)
+        #Add circular dates 
+        df_circular_date['circular_date'] = self.circular_date(month_num_start_year_hydrologic, unit)
 
-            df_radians_date['freq'] = list_freq
-            
-            #Calculated month (numeric). Ex: January corresponding month 1, February month 2 ...
-            df_radians_date['month_num'] = df_radians_date[col_name].dt.month
+        #Calculating the number of occurrences of each flood event
+        list_freq = []
+        for circular in df_circular_date['circular_date']:
+            freq = 1
+            for circular_compare in df_circular_date['circular_date']:
+                if circular == circular_compare:
+                    freq += 1
+            list_freq.append(freq)
 
-            #Calculated name month
-            df_radians_date['month'] = df_radians_date[col_name].dt.month_name()
+        #Add frequence events floods
+        df_circular_date['freq'] = list_freq
+        
+        #Calculated month (numeric). Ex: January corresponding month 1, February month 2 ...
+        df_circular_date['month_num'] = df_circular_date['date_peaks'].dt.month
 
-            #Add data for ajusting plot
-            add_data = {col_name:['01-'+str(mes)+'-2000' for mes in range(1, 13)],
-                    'radians_date':12*[0],
-                    'Duration':12*[0],
-                    'peaks':12*[0],
-                    'month':['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'],
-                    'freq':12*[0],
-                    'month_num':[month for month in range(1, 13)]}
-            
-            #Concat dataframes and ordened months
-            df_radians_date = pd.concat([pd.DataFrame(add_data), 
-                                         df_radians_date]).sort_values(by=['month_num', 'freq'])
-            
+        #Calculated name month
+        df_circular_date['month'] = df_circular_date['date_peaks'].dt.month_name()
 
-            fig = px.bar_polar(df_radians_date, r="freq", theta="month", 
-                   color='peaks',
-                   color_continuous_scale= px.colors.sequential.Blues)
+        #Add data for ajusting plot
+        add_data = {'date_peaks':['01-'+str(mes)+'-2000' for mes in range(1, 13)],
+                'circular_date':12*[0],
+                'Duration':12*[0],
+                'peaks':12*[0],
+                'month':['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'],
+                'freq':12*[0],
+                'month_num':[month for month in range(1, 13)]}
+        
+        #Concat dataframes and ordened months
+        df_circular_date = pd.concat([pd.DataFrame(add_data), 
+                                        df_circular_date]).sort_values(by=['month_num', 'freq'])
+        
+        #Showing only the first three letters of the months
+        df_circular_date['month'] = df_circular_date['month'].apply(lambda x: x[:3])
+        
+
+        fig = px.bar_polar(df_circular_date, r="freq", theta="month", 
+                color='peaks',
+                color_continuous_scale= px.colors.sequential.Blues,
+                labels={
+                    'freq': 'Floods number',
+                    'month': 'Month',
+                    'peaks': 'Peak (m³/s)'})
+
+        fig.update_layout(
+            title='Eventos de cheias ',
+            font=dict(family='Times New Roman', size=25, color='black'),
+            font_size=22,
+            legend_font_size=12,
+            polar_radialaxis_ticksuffix=' Floods',
+            polar_radialaxis_tickfont=dict(size=14),
+            polar_angularaxis_rotation=90)
+
+        fig.show()
 
 
-            fig.update_layout(
-                title=dict(text='Eventos de cheias '),
-                font=dict(family='Time New Roman', size=18, color='black'),
-                legend_font_size=16,
-                polar_radialaxis_ticksuffix='',
-                polar_angularaxis_rotation=90,
-                polar_angularaxis_tick0=5,
+    def plot_scatter_circular(self, month_num_start_year_hydrologic, unit='rad'):
+        #Generating copy of daframe SDP
+        df_circular_date = self.df_parcial.copy()
+
+        #Add col with dates peaks floods
+        df_circular_date['date_peaks'] = df_circular_date.index
+
+        #Add circular dates 
+        df_circular_date['circular_date'] = self.circular_date(month_num_start_year_hydrologic, unit)
+        
+        #Selecting columns that will be used
+        df_circular_date = df_circular_date[['Duration', 'peaks', 'circular_date', 'date_peaks']]
+
+        #Calculating year and month of each date
+        df_circular_date['year'] = df_circular_date.index.year
+        df_circular_date['month_num'] = df_circular_date.index.month
+        df_circular_date['month'] = df_circular_date.index.month_name()
+
+
+        #Add data for ajusting plot
+        add_data = pd.DataFrame({'date_peaks':['01-'+str(mes)+'-2000' for mes in range(1, 13)],
+                'circular_date':12*[0],
+                'Duration':12*[0],
+                'peaks':12*[0],
+                'month':['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'],
+                'month_num':[month for month in range(1, 13)]})
+
+        #Joining and ordering dataframes
+        df_circular_date = pd.concat([df_circular_date, add_data]).sort_values(['month_num'])
+
+        #Plotting data
+        fig = px.scatter_polar(df_circular_date, r="peaks", theta="circular_date", 
+                   color='year',
+                   color_continuous_scale= px.colors.sequential.Plasma,
+                   labels={
+                     'peaks': 'Peaks (m³/s)',
+                     'circular_date': 'Circular Date',
+                     'year': 'Ano'})
+
+        # ============ Ajusting ticktext legend =========
+        # We need to generate the sequence of months of the hydrological year
+
+        #Created list with all months year
+        list_months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December']
+
+        #List for saving sequence months
+        sequence_month = []
+
+        #Saving months from the beginning of the hydrological year until December
+        for n_month in range(month_num_start_year_hydrologic, 13):
+            sequence_month.append(list_months[n_month - 1][:3])
+
+        ##Saving months from the January until end year hydrologic
+        for n_month in range(1, month_num_start_year_hydrologic):
+            sequence_month.append(list_months[n_month - 1][:3])
+
+        fig.update_layout(
+            title='Eventos de cheias ',
+            font=dict(family='Times New Roman', size=25, color='black'),
+            legend_font_size=18,
+            polar_radialaxis_ticksuffix='',
+            polar_radialaxis_tickfont=dict(size=14),
+            polar_angularaxis_rotation=240,      
+            #Ajust graph 
+            polar=dict(
+                bgcolor='white',
+                angularaxis=dict(showline=True, linewidth=1, linecolor='white', gridcolor='gray',
+                                tickvals=[30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360],  # degrees 
+                                ticktext=sequence_month),
+                radialaxis=dict(showline=False, gridcolor='gray')),
             )
 
-            fig.show()
+        fig.show()
 
-            
+
+
 
 
 

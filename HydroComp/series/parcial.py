@@ -62,7 +62,8 @@ class Parcial(object):
         if self.type_criterion == 'median':
             self.__percentil = 0.65
         elif self.type_criterion == 'autocorrelation':
-            self.duration = kwargs['duration']
+            self.duration = kwargs.get('duration', 0)
+           #self.duration = kwargs['duration'] # 'duration'
 
         self.__threshold(self.value)
         if self.type_criterion is not None:
@@ -111,7 +112,7 @@ class Parcial(object):
             idx_before = i
 
         self.peaks = pd.DataFrame(
-            max_events, columns=['Duration', 'Start', 'End', 'peaks'],
+            max_events, columns=['Duration', 'Start', 'End', 'peaks'], 
             index=max_events['Date']
         )
 
@@ -219,7 +220,7 @@ class Parcial(object):
                 events_criterion=kwargs['events_criterion']
             )
 
-        elif self.type_criterion == 'duration':
+        elif self.type_criterion == 'Duration':  # 'duration
             data, max_events = self.__criterion_duration(
                 data=kwargs['data'], max_events=kwargs['max_events'],
                 events_criterion=kwargs['events_criterion']
@@ -602,28 +603,6 @@ class Parcial(object):
 
         return fig, data
     
-    def radians(self, position='peak', scale='year'):
-        '''
-            scale: week, month or year
-        '''
-        df = self.peaks.copy()
-        df['date_peak'] = df.index
-
-        if position =='peak':
-            date = df['date_peak']
-            if scale == 'year':
-
-                radians_date = date.dt.dayofyear * 2 * np.pi / 365
-
-        #Created new dataframe for saving data
-        df_new = pd.DataFrame()
-        df_new['date_peak'], df_new['radians_peak'] = df['date_peak'], radians_date
-        df_new['Duration'], df_new['peaks'] = df['Duration'], df['peaks']
-
-        df_new
-
-
-
-        return df_new
+    
 
 
