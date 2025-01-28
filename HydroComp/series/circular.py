@@ -223,13 +223,16 @@ class Circular(object):
         for n_month in range(1, month_num_start_year_hydrologic):
             sequence_month.append(list_months[n_month - 1][:3])
 
+        #Calculating rotation angle axis to adjust graph
+        rotation_angular_axis = (sequence_month.index('Jan') * 30) + 90
+
         fig.update_layout(
             title='Eventos de cheias ',
             font=dict(family='Times New Roman', size=25, color='black'),
             legend_font_size=18,
             polar_radialaxis_ticksuffix='',
             polar_radialaxis_tickfont=dict(size=14),
-            polar_angularaxis_rotation=240,      
+            polar_angularaxis_rotation=rotation_angular_axis,      
             #Ajust graph 
             polar=dict(
                 bgcolor='white',
