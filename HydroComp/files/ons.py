@@ -4,7 +4,7 @@ Created on 21 de mar de 2018
 @author: clebson
 """
 import sys
-sys.path.insert(0, r'C:\Users\arist\OneDrive\Documentos\UFAL\PIBIC 24-25\lib_clebson') 
+sys.path.insert(0, r'C:\Users\arist\OneDrive\Documentos\UFAL\Pesquisas\PIBIC 24-25\lib_clebson') 
 
 from HydroComp.files.fileRead import FileRead
 import os
